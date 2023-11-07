@@ -23,7 +23,7 @@ jobs:
             ${{ runner.os }}-go-
       - name: build
         run: |
-          go build -o ./bin/event-exporter ./cmd
+          go mod init && go mod tidy -v  && go build -o ./bin/event-exporter ./cmd
       - name: Kaniko build
         uses: aevea/action-kaniko@master
         with:
