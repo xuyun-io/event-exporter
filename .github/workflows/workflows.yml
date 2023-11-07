@@ -1,0 +1,33 @@
+name: KubeStar CICD
+# This workflow is triggered on pushes to the repository.
+on: push
+
+jobs:
+  build:
+    name: Npm and Go and Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - name: "checkout go"
+        uses: actions/checkout@master
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./…
+      - name: "manifest"
+        run:  echo `git log | grep commit | head -1 | cut -d" " -f2` > manifest
+      - uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: build
+        run: |
+          go build -o ./bin/event-exporter ./cmd
+      - name: Kaniko build
+        uses: aevea/action-kaniko@master
+        with:
+          image: kubestar/event-exporter
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          build_file: build/Dockerfile
