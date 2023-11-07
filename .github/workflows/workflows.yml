@@ -9,25 +9,32 @@ jobs:
     steps:
       - name: "checkout go"
         uses: actions/checkout@master
+        with:
+          fetch-depth: 0
+      - name: Check go.sum exists
+        run: |
+          if [ ! -f go.sum ]; then
+            echo "go.sum does not exist."
+            exit 1
+          fi
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
           args: ./…
       - name: "manifest"
         run:  echo `git log | grep commit | head -1 | cut -d" " -f2` > manifest
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: build
-        run: |
-          go mod init && go mod tidy -v  && go build -o ./bin/event-exporter ./cmd
       - name: Kaniko build
         uses: aevea/action-kaniko@master
         with:
+          context: "./"
           image: kubestar/event-exporter
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          build_file: build/Dockerfile
+          build_file: Dockerfile
+          tag: "v1.0.1"
