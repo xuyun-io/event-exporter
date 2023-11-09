@@ -53,7 +53,7 @@ func main() {
 	group, stopChan := signal.SetupStopSignalContext()
 
 	kubeConfig, err := restclient.InClusterConfig()
-	if err == nil {
+	if err != nil {
 		klog.Fatalf("failed to build kubernetes client,err:%s", err.Error())
 	}
 
