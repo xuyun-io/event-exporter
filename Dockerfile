@@ -10,7 +10,7 @@ COPY . .
 RUN go mod tidy -v
 
 # Build the Go program, output to the 'bin' directory.
-RUN go build -buildvcs=false -o bin/event_exporter .
+RUN CGO_ENABLED=0 go build -a -installsuffix cgo -buildvcs=false -o bin/event_exporter .
 
 # Second stage: create a small runtime environment.
 FROM debian:stretch-slim
