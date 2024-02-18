@@ -1,7 +1,7 @@
 # First stage: build the Go binary.
 FROM public.ecr.aws/docker/library/golang:1.20 as builder
 
-WORKDIR /app
+WORKDIR /home/netstars/app
 
 # Copy the source code.
 COPY . .
@@ -15,10 +15,10 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -buildv
 # Second stage: create a small runtime environment.
 FROM public.ecr.aws/docker/library/alpine:3.18
 
-WORKDIR /app
+WORKDIR /home/netstars/app
 
 # Copy the built binary from the builder stage.
-COPY --from=builder /app/event_exporter /app/event_exporter
+COPY --from=builder /home/netstars/app/event_exporter event_exporter
 
 # 在 alpine 镜像中安装 shadow 以支持用户和组管理，ca-certificates 保证 SSL 连接，curl 可用于网络请求 tzdata 包含时区数据
 RUN apk --no-cache add shadow ca-certificates curl tzdata
@@ -28,7 +28,7 @@ RUN groupadd -r -g 996 netstars; \
     useradd -r -g netstars -u 996 netstars
 
 # 修改工作目录的所有权，使新用户拥有
-RUN chown -R netstars:netstars /app
+RUN chown -R netstars:netstars /home/netstars
 
 # Set the user to run your app.
 USER netstars
@@ -37,6 +37,6 @@ USER netstars
 EXPOSE 8080
 
 # Set the entrypoint.
-ENTRYPOINT ["/event_exporter"]
+ENTRYPOINT ["./event_exporter"]
 
 
