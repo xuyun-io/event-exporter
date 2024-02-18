@@ -46,7 +46,7 @@ func (o *Options) AddFlags() {
 	o.flag.AddGoFlagSet(klogFlags)
 
 	o.flag.StringArrayVar(&o.EventType, "eventType", []string{"Warning"}, "List of allowed event types. Default to warning type.")
-	o.flag.IntVar(&o.Port, "port", 9102, "Port to expose event metrics on")
+	o.flag.IntVar(&o.Port, "port", 8080, "Port to expose event metrics on")
 	o.flag.BoolVar(&o.Version, "version", false, "event exporter version information")
 
 	o.flag.Usage = func() {

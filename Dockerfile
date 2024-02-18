@@ -1,28 +1,42 @@
 # First stage: build the Go binary.
-FROM golang:1.20 as builder
+FROM public.ecr.aws/docker/library/golang:1.20 as builder
 
-WORKDIR /go/src/app
+WORKDIR /app
 
 # Copy the source code.
 COPY . .
 
 # Download dependencies.
-RUN go mod tidy -v
+RUN go mod download
 
 # Build the Go program, output to the 'bin' directory.
-RUN CGO_ENABLED=0 go build -a -installsuffix cgo -buildvcs=false -o bin/event_exporter .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -buildvcs=false -o event_exporter
 
 # Second stage: create a small runtime environment.
-FROM debian:stretch-slim
+FROM public.ecr.aws/docker/library/alpine:3.18
+
+WORKDIR /app
 
 # Copy the built binary from the builder stage.
-COPY --from=builder /go/src/app/bin/event_exporter /event_exporter
+COPY --from=builder /app/event_exporter /app/event_exporter
+
+# 在 alpine 镜像中安装 shadow 以支持用户和组管理，ca-certificates 保证 SSL 连接，curl 可用于网络请求 tzdata 包含时区数据
+RUN apk --no-cache add shadow ca-certificates curl tzdata
+
+# 创建一个新的用户和用户组 "netstar"
+RUN groupadd -r -g 996 netstars; \
+    useradd -r -g netstars -u 996 netstars
+
+# 修改工作目录的所有权，使新用户拥有
+RUN chown -R netstars:netstars /app
 
 # Set the user to run your app.
-USER nobody
+USER netstars
+
+# Expose the application port.
+EXPOSE 8080
 
 # Set the entrypoint.
 ENTRYPOINT ["/event_exporter"]
 
-# Expose the application port.
-EXPOSE 9102
+

@@ -8,7 +8,7 @@ import (
 
 func TestOptionsParse(t *testing.T) {
 	defaultEventTypes := []string{"Warning"}
-	defaultPort := 9102
+	defaultPort := 8080
 	defaultVersion := false
 	defaultKubeMasterURL := ""
 	defaultKubeConfigPath := ""
