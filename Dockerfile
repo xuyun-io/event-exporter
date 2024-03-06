@@ -10,7 +10,7 @@ COPY . .
 RUN go mod download
 
 # Build the Go program, output to the 'bin' directory.
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -buildvcs=false -o event_exporter
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -buildvcs=false -o event_exporter
 
 # Second stage: create a small runtime environment.
 FROM public.ecr.aws/docker/library/alpine:3.18
