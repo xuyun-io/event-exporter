@@ -5,9 +5,6 @@ on: push
 jobs:
   build-and-push-kubestar:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [linux/arm64, linux/amd64]
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v4
@@ -38,7 +35,5 @@ jobs:
           dockerfile: Dockerfile
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          platforms: ${{ matrix.platform }}
-          cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.platform }}
-          cache-to: type=local,dest=/tmp/.buildx-cache-${{ matrix.platform }},mode=max
-          tag: "v1.0.5"
+          platforms: linux/amd64,linux/arm64
+          tags: "v1.0.5,latest"
