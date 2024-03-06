@@ -1,40 +1,44 @@
 name: KubeStar CICD
-# This workflow is triggered on pushes to the repository.
+
 on: push
 
 jobs:
-  build:
-    name: Npm and Go and Docker build
+  build-and-push-kubestar:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/arm64, linux/amd64]
     steps:
-      - name: "checkout go"
-        uses: actions/checkout@master
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+      - name: "Set up QEMU"
+        uses: docker/setup-qemu-action@v3
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
         with:
-          fetch-depth: 0
-      - name: Check go.sum exists
-        run: |
-          if [ ! -f go.sum ]; then
-            echo "go.sum does not exist."
-            exit 1
-          fi
-      - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
+          driver: docker-container
+      - name: "Login to Docker Hub"
+        uses: docker/login-action@v3
         with:
-          args: ./…
-      - name: "manifest"
-        run:  echo `git log | grep commit | head -1 | cut -d" " -f2` > manifest
-      - uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Kaniko build
-        uses: aevea/action-kaniko@master
-        with:
-          context: "./"
-          image: kubestar/event-exporter
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          build_file: Dockerfile
+      - name: "manifest"
+        run: echo `git log | grep commit | head -1 | cut -d" " -f2` > manifest
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache-${{ matrix.platform }}
+          key: ${{ runner.os }}-buildx-${{ github.sha }}-${{ matrix.platform }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.platform }}
+      - name: "Build and Push event-exporter Image"
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: kubestar/event-exporter
+          dockerfile: Dockerfile
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          platforms: ${{ matrix.platform }}
+          cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.platform }}
+          cache-to: type=local,dest=/tmp/.buildx-cache-${{ matrix.platform }},mode=max
           tag: "v1.0.5"
